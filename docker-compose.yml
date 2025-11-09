@@ -1,0 +1,91 @@
+services:
+  # ---------------- Jenkins Master ----------------
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /data/Jenkins/jenkins_home:/var/jenkins_home:Z
+    networks:
+      net:
+        ipv4_address: 172.18.0.2
+
+  # ---------------- Maven Agent ----------------
+  maven-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.maven-agent
+    container_name: jenkins-agent-maven
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://172.18.0.2:8080
+      - JENKINS_AGENT_NAME=maven-agent
+      - JENKINS_SECRET=e930f1184ee4791900ef034febd985a875189caa3cbfc4ab03bcc3c30b712d9b
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
+    networks:
+      net:
+        ipv4_address: 172.18.0.3
+
+  # ---------------- Generic Agents (Optional) ----------------
+  agent1:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent-1
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://172.18.0.2:8080
+      - JENKINS_AGENT_NAME=agent1
+      - JENKINS_SECRET=9a58c5edf68345fbb1492c01673a85ecff07e138e3df9721898f5ffa9ee8d750
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
+    networks:
+      net:
+        ipv4_address: 172.18.0.4
+
+  agent2:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent-2
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://172.18.0.2:8080
+      - JENKINS_AGENT_NAME=agent2
+      - JENKINS_SECRET=74188a2f466b3a354d47e5d5d95f790fad6cfd85bce68706aaf1b3eb43f9b1d0
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
+    networks:
+      net:
+        ipv4_address: 172.18.0.5
+
+  # ---------------- Tomcat Deployment Server (SSH Enabled) ----------------
+  tomcat:
+    build:
+      context: .
+      dockerfile: Dockerfile.tomcat
+    container_name: tomcat-server
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+      - "2222:22"
+    environment:
+      - TOMCAT_MANAGER_USER=tomcat
+      - TOMCAT_MANAGER_PASS=tomcatpassword
+    volumes:
+      - /data/Jenkins/tomcat_webapps:/usr/local/tomcat/webapps
+    networks:
+      net:
+        ipv4_address: 172.18.0.6
+
+# ---------------- Network with static IP range ----------------
+networks:
+  net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
+

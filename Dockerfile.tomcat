@@ -1,0 +1,24 @@
+# ---------------- Tomcat with SSH ----------------
+FROM tomcat:9-jdk17
+
+# Install SSH server
+RUN apt-get update && \
+    apt-get install -y openssh-server && \
+    mkdir -p /var/run/sshd /root/.ssh && \
+    chmod 700 /root/.ssh && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Jenkins agent public key
+COPY tomcat_key.pub /root/.ssh/authorized_keys
+
+# Secure permissions and SSH configuration
+RUN chmod 600 /root/.ssh/authorized_keys && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+
+# Expose required ports
+EXPOSE 8080 22
+
+# Start SSH and Tomcat
+CMD service ssh start && catalina.sh run
+

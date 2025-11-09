@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /data/Jenkins/jenkins_home:/var/jenkins_home:Z
+    networks:
+      - net
+
+  agent1:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent-1
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_AGENT_NAME=agent1
+      - JENKINS_SECRET=9a58c5edf68345fbb1492c01673a85ecff07e138e3df9721898f5ffa9ee8d750
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
+    networks:
+      - net
+
+  agent2:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent-2
+    restart: unless-stopped
+    environment:
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_AGENT_NAME=agent2
+      - JENKINS_SECRET=74188a2f466b3a354d47e5d5d95f790fad6cfd85bce68706aaf1b3eb43f9b1d0
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
+    networks:
+      - net
+
+networks:
+  net:
+    driver: bridge
+
